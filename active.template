@@ -1,0 +1,117 @@
+/**
+ * Generation Details
+ * Opal Version: {{.Version}}
+ * Date: {{.Date}}
+ * Time: {{.Time}}
+ */
+package {{.Package}}
+
+import (
+	. "github.com/twinj/opal"
+	"fmt"
+	"reflect"
+)
+
+// Compile time check of Model implementation
+var _ Model = &{{.Model}}{}
+
+// Constant ModelName to be used to identify type
+const {{.Model}}_ ModelName = "{{.ImportName}}"
+
+// The global {{.Model}} Entity - deliberately private
+var _{{.Model}} Entity
+
+// *************************************************** MODEL
+
+func New{{.Model}}() *{{.Model}} {
+	o := new({{.Model}})
+	o.Entity = _{{.Model}}
+	return o
+}
+
+func ({{.Model}}) ScanInto() (Model, []interface{}) {
+	o := New{{.Model}}()
+	return o, Args(o)
+}
+
+func (o *{{.Model}}) Keys() []interface{} {
+	return []interface{}{ {{range $i, $e := .Keys}}{{if $i}}, {{end}}&o.{{.Name}}{{end}} }
+}
+
+func (o *{{.Model}}) Parameters() []interface{} {
+	return []interface{}{ {{range $i, $e := .Columns}}{{if $i}}, {{end}}&o.{{.Name}}{{end}} }
+}
+
+func (o *{{.Model}}) String() string {
+ 	return fmt.Sprint(Args(o)...)
+}
+
+func (o *{{.Model}}) Create() string {
+	return fmt.Sprint(Args(o)...)
+}
+
+func (o *{{.Model}}) Save() Result {
+	return o.Gem().Merge(o)
+}
+
+func (o *{{.Model}}) Delete() Result {
+	return o.Gem().Remove(o)
+}
+
+func ({{.Model}}) Gather(pModelMetadata *ModelMetadata) (ModelName, *Entity) {
+	pModelMetadata.AddTable(Table{ {{.Table}} })
+	{{range $i, $e := .Keys}}{{if $i}}{{/* Extra range args determines whether a newline is required at the end */}}
+	{{end}}pModelMetadata.AddKey({{printf "%q" .Name}}, {{.Index}}, Column{ {{.Tag}} }, {{.Kind}}){{end}}
+	{{range $i, $e := .Columns}}{{if $i}}
+	{{end}}pModelMetadata.AddColumn({{printf "%q" .Name}}, {{.Index}}, Column{ {{.Tag}} }, {{.Kind}}){{end}}
+	return {{.Model}}_, &_{{.Model}}
+}
+
+// ***************************************************** DAO
+
+type {{.Model}}DAO struct {
+	*BaseDAO
+}
+
+func (o {{.Model}}DAO) FindAll() []{{.Model}} {
+	return o.CastAll(o.FindAllModels({{.Model}}_))
+}
+
+func (o {{.Model}}DAO) Find({{range $i, $e := .Keys}}{{if $i}}, {{end}}p{{printf "%d" $i}} {{.Primitive}}{{end}}) *{{.Model}} {
+	return o.Cast(o.FindModel({{.Model}}_, {{range $i, $e := .Keys}}{{if $i}}, {{end}}New{{.TypeName}}(p{{printf "%d" $i}}){{end}}))
+}
+
+func (o {{.Model}}DAO) Insert(pModel *{{.Model}}) Result {
+	return o.Persist(pModel)
+}
+
+func (o {{.Model}}DAO) Update(pModel *{{.Model}}) Result {
+	return o.Merge(pModel)
+}
+
+func (o {{.Model}}DAO) Delete(pModel *{{.Model}}) Result {
+	return o.Remove(pModel)
+}
+
+func (o {{.Model}}DAO) Exec(pSql Sql) ([]{{.Model}}, error) {
+	rows, err := o.Gem().Query({{.Model}}_, pSql)
+	if err != nil {
+		return nil, err
+	}
+	return o.CastAll(rows), nil
+}
+
+func (o {{.Model}}DAO) CastAll(pModels []Model) []{{.Model}} {
+	list := make([]{{.Model}}, len(pModels))
+	for i, model := range pModels {
+		list[i] = *o.Cast(model)
+	}
+	return list
+}
+
+func ({{.Model}}DAO) Cast(pModel Model) *{{.Model}} {
+	if pModel != nil {
+		return pModel.(*{{.Model}})
+	}
+	return nil
+}
