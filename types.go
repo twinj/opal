@@ -424,6 +424,19 @@ func (o Time) String() string {
 // TODO consider simplification of
 // var i int64 = 20
 // &i
-func Nil(pValue interface{}) interface{} {
-	return &pValue
+
+func AInt64(v int64) *int64 {
+	return &v
+}
+
+func AFloat64(v float64) *float64 {
+	return &v
+}
+
+func AString(v string) *string {
+	return &v
+}
+
+func ABool(v bool) *bool {
+	return &v
 }
