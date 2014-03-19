@@ -17,33 +17,6 @@ var _ Entity = &OpalEntity{}
 
 // ***********************************************  Model...
 
-// The Base model acts as the container to retrieve all Models
-// and their corresponding metadata in the Domain.
-//
-// Each domain must define a BaseModel
-//
-// BaseModel / Entity overlap in function
-// TODO re-consider use and requirement
-type BaseModel interface {
-	Models() []Domain
-}
-
-// A ModelName is an identifying string specific to a Model.
-// It must be unique e.g: domain.Person
-type ModelName string
-
-// Name splits a model name from its package and returns the
-// Model only name as a string
-// This should return the implemented struct name
-func (m ModelName) Name() string {
-	return strings.Split(string(m), ".")[1]
-}
-
-// Casts a ModelName into a string
-func (m ModelName) String() string {
-	return string(m)
-}
-
 // A Model is the interface type which can represent any object
 // that can be stored as a Database store item
 type Model interface {
@@ -55,16 +28,17 @@ type Model interface {
 
 	// Gather creates the column and table data metadata
 	// required to perform all database tasks associated
-
 	// with the Model
-	// It retrieves an address in which to store the models
+
+	// It retrieves an address in which to store a Models domain
 	// Entity implementation. This implementation is required
 	// to perform basic database functions such as saving and
-	// deleting or other functions associated with a single instance.
+	// deleting or other functions associated with a single Model
+	// instance.
 
-	// It also retrieves a function to create the global model
+	// It also retrieves a function to create the Models domain
 	// specific DAO. This object can be used to perform tasks
-	// associated with a Model rather than a single instance.
+	// associated with the Models domain rather than a single instance.
 	Gather(pMetadata *ModelMetadata) (ModelName, *Entity, func(*ModelIDAO)ModelDAO)
 
 	// ScanInto should return a new Model which can interact with
@@ -81,10 +55,27 @@ type Model interface {
 	Parameters() []interface{}
 }
 
+// A ModelName is an identifying string specific to a Model.
+// It must be unique across all entities e.g: domain.Person
+type ModelName string
+
+// Name splits a model name from its package and returns the
+// Model only name as a string
+// This should return the implementations struct name
+func (m ModelName) Name() string {
+	return strings.Split(string(m), ".")[1]
+}
+
+// Casts a ModelName into a string
+func (m ModelName) String() string {
+	return string(m)
+}
+
 // ******************************************** Model hooks
 
 // ModelHook can be used by a Model implementation to do
-// a specific task on one of the pre defined events.
+// a specific task on one of the pre defined sql execution
+// events.
 // A Model must implement one of the Hook interfaces below for the
 // ModelHook function to run during Model related execution.
 type ModelHook func() error
@@ -181,20 +172,12 @@ func insertArgs(pModel Model) []interface{} {
 	return BindArgs(pModel)
 }
 
-// Gets the bind args required to update a Model
+// Gets the bind args required to update the Model
 func updateArgs(pModel Model) []interface{} {
 	return append(pModel.Parameters(), pModel.Keys()...)
 }
 
-// Gets the bind args required to delete Model
+// Gets the bind args required to delete the Model
 func deleteArgs(pModel Model) []interface{} {
-	return BindArgs(pModel)
+	return pModel.Keys()
 }
-
-// TODO relationships and associations
-type HasMany Association
-type BelongsTo Association
-type HasOne Association
-
-type Association interface{}
-type Transient bool

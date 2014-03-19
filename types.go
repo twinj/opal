@@ -421,3 +421,9 @@ func (o Time) String() string {
 }
 
 // ************************************************
+// TODO consider simplification of
+// var i int64 = 20
+// &i
+func Nil(pValue interface{}) interface{} {
+	return &pValue
+}

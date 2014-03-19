@@ -61,7 +61,7 @@ type ActiveRecordDAO interface {
 
 	// Takes a Model, updates an existing entity from the
 	// data-store and returns a result
-	Update(pModel Model) Result
+	Save(pModel Model) Result
 
 	// Takes a Model and removes an existing entity from the
 	// data-store
@@ -180,7 +180,7 @@ func (o *ModelIDAO) Insert(pModel Model) Result {
 	return persist(o, pModel)
 }
 
-func (o *ModelIDAO) Update(pModel Model) Result {
+func (o *ModelIDAO) Save(pModel Model) Result {
 	return merge(o, pModel)
 }
 
@@ -273,7 +273,7 @@ func GEM(o StartArgs) *Gem {
 		meta.addStmt(gem.DB, find, builder.Select().WherePk().Sql())
 		meta.addStmt(gem.DB, insert, builder.Insert().Values().Sql())
 		meta.addStmt(gem.DB, update, builder.Update().WherePk().Sql())
-		meta.addStmt(gem.DB, delete, builder.Delete().WhereAll().Sql())
+		meta.addStmt(gem.DB, delete, builder.Delete().WherePk().Sql())
 	}
 	done = true
 	return currentGem

@@ -70,6 +70,8 @@ func (o *ModelMetadata) addStmt(pDB *sql.DB, pKey string, pValue Sql) {
 		panic(err) // TODO wtf?
 	}
 	o.preparedStatements[pKey] = stmt
+	log.Printf("Opal.ModelMetadata.addStmt: %#v", o.preparedStatements[pKey])
+
 }
 
 /**

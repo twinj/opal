@@ -1,6 +1,8 @@
 package opal
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Entity *****************************************************
 
@@ -25,7 +27,7 @@ type Entity interface {
 	// of the main DAO
 	ActiveRecord() ActiveRecordDAO
 
-	// Returns the models ModelName which represents its
+	// Returns the Entity's ModelName which represents its
 	// domain or type
 	ModelName() ModelName
 
@@ -54,8 +56,7 @@ type Entity interface {
 	// the data-store
 	Delete() Result
 
-	// The string method should print the entity in which ever format
-	// you prefer  // TODO ? better placement
+	// String returns a string representation of the Model
 	String() string
 
 }
@@ -98,18 +99,16 @@ func (o OpalEntity) Model() Model {
 	return o.model
 }
 
-// TODO temporary insert
 func (o *OpalEntity) Insert() Result {
-	return o.activeRecord.Persist(o.model)
+	return o.activeRecord.Insert(o.model)
 }
 
 func (o *OpalEntity) Save() Result {
-	return o.activeRecord.Merge(o.model)
+	return o.activeRecord.Save(o.model)
 }
 
 func (o *OpalEntity) Delete() Result {
-	// TODO should there be a memory nil here?
-	return o.activeRecord.Remove(o.model)
+	return o.activeRecord.Delete(o.model)
 }
 
 func (o *OpalEntity) String() string {

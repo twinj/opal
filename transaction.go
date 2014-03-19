@@ -6,42 +6,12 @@ package opal
 
 import (
 	"database/sql"
-	"fmt"
 )
-
-// Result is a wrapper around a sql.Result and any
-// affiliated error. It is used to simplify the API
-// TODO change package for Result as its associated to DAO
-type Result struct {
-	sql.Result
-	Error error
-}
-
-func (o Result) String() string {
-	var si, sj, sErr string
-	i, errI := o.LastInsertId()
-	j, errJ := o.RowsAffected()
-	if o.Error == nil {
-		sErr = "nil"
-	} else {
-		sErr = fmt.Sprint(o.Error)
-	}
-	if (errI == nil) {
-		si = fmt.Sprintf("%d", i)
-	} else {
-		si = fmt.Sprint(errI)
-	}
-	if (errJ == nil) {
-		sj = fmt.Sprintf("%d", j)
-	} else {
-		sj = fmt.Sprint(errJ)
-	}
-	return fmt.Sprintf("Last insert: %s; Rows affected: %s; Error: %s", si, sj, sErr)
-}
 
 // ******************************************** Transactions
 
-// Standard sql.Tx wrapper which holds the action to run and its result
+// Txn is a sql.Tx wrapper which holds the action to run and its result
+// It also carries a reference to the current Gem.
 type Txn struct {
 
 	//Embedded so Txn behaves like a standard Tx
@@ -62,7 +32,8 @@ type Txn struct {
 }
 
 // Transaction is a wrapper of a *Txn for building Transactions.
-// It used to simplify Transaction building.
+// It is used to simplify Transaction building from a user perspective.
+// t Transaction is much easier to remember than t *Txn
 type Transaction struct {
 	*Txn
 }
@@ -97,8 +68,11 @@ func (o *Gem) Begin(fAction Action) *Txn {
 	return tx
 }
 
-// Go runs the Transaction it has in build Begin Rollback and
-// Commit functionality.
+// Go runs the Transaction it has in from Gem.Begin Begin
+// Running Go will defer control of Rollback and
+// Commit functionality to the system.
+// If required a user can manually run a transaction using the
+// *sql.DB connection.
 // Returns the result and whether the transaction was successful
 func (o *Txn) Go() (result Result, success bool) {
 	// Begin transaction
@@ -115,7 +89,7 @@ func (o *Txn) Go() (result Result, success bool) {
 	for key, txStmt := range o.gem.txPreparedStatements {
 		txStmt.Close()
 		//delete(o.gem.txPreparedStatements, key)
-		// TODO why cant i use delete here
+		// TODO Delete here
 		o.gem.txPreparedStatements[key] = nil
 	}
 
@@ -156,8 +130,8 @@ func (o *Txn) Update(pModel Model) Result {
 
 // Persist will insert the Model within a Transaction.
 // Call this within a Txn func Action
-func (o *Txn) Insert(pModel Model, pArgs ...interface{}) Result {
-	return persist(o, pModel, pArgs...)
+func (o *Txn) Insert(pModel Model) Result {
+	return persist(o, pModel)
 }
 
 // Persist will insert the Model within a Transaction.
