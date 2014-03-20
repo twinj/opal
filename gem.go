@@ -94,7 +94,7 @@ func persist(pExecor Execor, pModel Model, pArgs ...interface{}) Result {
 	var id int64
 	if id, result.Error = result.LastInsertId(); result.Error == nil {
 		k := pModel.Keys()[0].(*Int64)
-		k.Set(id)
+		k.A(id)
 	}
 	return result
 }

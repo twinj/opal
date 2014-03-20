@@ -167,7 +167,7 @@ func (o *ModelIDAO) Insert(pModel Model) Result {
 		// TODO dialect for Id
 		if id, err := result.LastInsertId(); err == nil {
 			k := pModel.Keys()[0].(*Int64)
-			k.Set(id)
+			k.A(id)
 		}
 		if fPost != nil {
 			err := fPost()

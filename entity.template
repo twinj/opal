@@ -28,14 +28,14 @@ var {{.DAOName}} {{.DAOName}}DAO
 
 // *************************************************** MODEL
 
-func New{{.Model}}() *{{.Model}} {
+func Init{{.Model}}() *{{.Model}} {
 	o := new({{.Model}})
 	o.Entity = _{{.Model}}.New(o)
 	return o
 }
 
 func ({{.Model}}) ScanInto() (Model, []interface{}) {
-	o := New{{.Model}}()
+	o := Init{{.Model}}()
 	return o, BindArgs(o)
 }
 
@@ -45,11 +45,6 @@ func (o *{{.Model}}) Keys() []interface{} {
 
 func (o *{{.Model}}) Parameters() []interface{} {
 	return []interface{}{ {{range $i, $e := .Columns}}{{if $i}}, {{end}}&o.{{.Name}}{{end}} }
-}
-
-func (o *{{.Model}}) create(pArgs {{.Model}}Args) *{{.Model}} {
-	panic("Opal.Model.Create: Not yet implemented")
-	return nil
 }
 
 func ({{.Model}}) Gather(pModelMetadata *ModelMetadata) (ModelName, *Entity, func(*ModelIDAO)ModelDAO) {
@@ -63,14 +58,14 @@ func ({{.Model}}) Gather(pModelMetadata *ModelMetadata) (ModelName, *Entity, fun
 
 // ************************************************* HELPERS
 
-type {{.Model}}Args struct {
+type New{{.Model}} struct {
 	{{range $i, $e := .Keys}}{{if $i}}{{/* Extra range args determines whether a newline is required at the end */}}
-	{{end}}{{.Name}} {{.Primitive}}{{end}}
+	{{end}}{{.Name}} *{{.Primitive}}{{end}}
 	{{range $i, $e := .Columns}}{{if $i}}
-	{{end}}{{.Name}} {{.Primitive}}{{end}}
+	{{end}}{{.Name}} *{{.Primitive}}{{end}}
 }
 
-func (o *{{.Model}}Args) Get() []interface{} {
+func (o *New{{.Model}}) Get() []interface{} {
 	return []interface{}{
 		{{range $i, $e := .Keys}}{{if $i}}{{/* Extra range args determines whether a newline is required at the end */}}
 		{{end}}o.{{.Name}},{{end}}
@@ -79,11 +74,17 @@ func (o *{{.Model}}Args) Get() []interface{} {
 	}
 }
 
-func (o {{.DAOName}}IDAO) Create(pArgs Args) *{{.Model}} {
-    m := New{{.Model}}()
-    //args := pArgs.Get()
+func (o *New{{.Model}}) Scan(pModel *{{.Model}}) {
+		{{range $i, $e := .Keys}}{{if $i}}{{/* Extra range args determines whether a newline is required at the end */}}
+		{{end}}pModel.{{.Name}}.Scan(o.{{.Name}}){{end}}
+		{{range $i, $e := .Columns}}{{if $i}}
+		{{end}}pModel.{{.Name}}.Scan(o.{{.Name}}){{end}}
+}
 
-    o.Insert(m)
+func (o New{{.Model}}) Save() *{{.Model}} {
+	m := Init{{.Model}}()
+	o.Scan(m)
+	m.Insert()
 	return m
 }
 

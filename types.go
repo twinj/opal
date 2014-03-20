@@ -8,7 +8,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	_ "log"
 	"reflect"
 	"time"
 )
@@ -80,6 +79,8 @@ OPAL
 // String implements the Scanner interface so
 // It can be used as a scan destination, similar to sql.NullString.
 type String struct {
+// TODO consider removing type safety and asserting type at scan
+// by using interfaces - this could make it easier for users
 	Str *string
 }
 
@@ -94,25 +95,28 @@ func NewString(p string) String {
 }
 
 // Convenience setting method
-func (o *String) Set(p string) {
+func (o *String) A(p string) {
 	o.Str = &p
 }
 
 // String implements the sql.Scanner interface.
 func (o *String) Scan(pValue interface{}) error {
+	if pValue == nil {
+		return nil
+	}
 	o.Str = new(string)
 	switch s := pValue.(type) {
 	case string:
 		*o.Str = s
 		return nil
+	case *string:
+		o.Str = s
+		return nil
 	case []byte:
 		*o.Str = string(s)
 		return nil
 	}
-	if pValue == nil {
-		return nil
-	}
-	return errors.New("Opal.String: invalid value to scan into")
+	return errors.New("Opal.String: invalid value to scan into String")
 }
 
 // String implements the driver Valuer interface.
@@ -153,7 +157,7 @@ func NewSlice(p []byte) Slice {
 }
 
 // Convenience setting method
-func (o *Slice) Set(p []byte) {
+func (o *Slice) A(p []byte) {
 	*o = Slice(p)
 }
 
@@ -167,7 +171,7 @@ func (o *Slice) Scan(pValue interface{}) error {
 	if pValue == nil {
 		return nil
 	}
-	return errors.New("Opal.Slice: invalid value to scan into Int64")
+	return errors.New("Opal.Slice: invalid value to scan into Slice")
 }
 
 // Slice implements the driver Valuer interface.
@@ -208,18 +212,29 @@ func NewInt64(p int64) Int64 {
 }
 
 // Convenience setting method
-func (o *Int64) Set(p int64) {
+func (o *Int64) A(p int64) {
 	o.Int64 = &p
 }
 
 // Int64 implements the Scanner interface.
 func (o *Int64) Scan(pValue interface{}) error {
-	if value, ok := pValue.(int64); ok {
-		o.Int64 = new(int64)
-		*o.Int64 = value
+	if pValue == nil {
 		return nil
 	}
-	if pValue == nil {
+	o.Int64 = new(int64)
+	switch value := pValue.(type) {
+	case int64:
+		*o.Int64 = value
+		return nil
+	case int:
+		*o.Int64 = int64(value)
+		return nil
+	case *int64:
+		o.Int64 = value
+		return nil
+	case *int:
+		v := int64(*value)
+		o.Int64 = &v
 		return nil
 	}
 	return errors.New("Opal.Int64: invalid value to scan into Int64")
@@ -266,21 +281,25 @@ func NewFloat64(p float64) Float64 {
 }
 
 // Convenience setting method
-func (o *Float64) Set(p float64) {
+func (o *Float64) A(p float64) {
 	o.Float64 = &p
 }
 
 // Float64 the Scanner interface.
 func (o *Float64) Scan(pValue interface{}) error {
-	if value, ok := pValue.(float64); ok {
-		o.Float64 = new(float64)
-		*o.Float64 = value
-		return nil
-	}
 	if pValue == nil {
 		return nil
 	}
-	return errors.New("Opal.Float64: invalid value to scan into")
+	o.Float64 = new(float64)
+	switch value := pValue.(type) {
+	case float64:
+		*o.Float64 = value
+		return nil
+	case *float64:
+		o.Float64 = value
+		return nil
+	}
+	return errors.New("Opal.Float64: invalid value to scan into Float64")
 }
 
 // Float64 implements the driver Valuer interface.
@@ -324,20 +343,25 @@ func NewBool(p bool) Bool {
 }
 
 // Convenience setting method
-func (o *Bool) Set(p bool) {
+func (o *Bool) A(p bool) {
 	o.Bool = &p
 }
 
 // Bool implements the sql.Scanner interface.
 func (o *Bool) Scan(pValue interface{}) error {
-	if value, ok := pValue.(bool); ok {
-		o.Bool = new(bool)
-		*o.Bool = value
-		return nil
-	}
 	if pValue == nil {
 		return nil
 	}
+	o.Bool = new(bool)
+	switch value := pValue.(type) {
+	case bool:
+		*o.Bool = value
+		return nil
+	case *bool:
+		o.Bool = value
+		return nil
+	}   // TODO consider panic at this point programmer error
+	//might break interface
 	return errors.New("Opal.Bool: invalid value to scan into")
 }
 
@@ -382,7 +406,7 @@ func NewTime(p time.Time) Time {
 }
 
 // Convenience setting method
-func (o *Time) Set(p time.Time) {
+func (o *Time) A(p time.Time) {
 	o.Time = &p
 }
 
@@ -424,6 +448,10 @@ func (o Time) String() string {
 // TODO consider simplification of
 // var i int64 = 20
 // &i
+
+func A(v interface{}) interface{} {
+	return v
+}
 
 func AInt64(v int64) *int64 {
 	return &v
