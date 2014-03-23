@@ -60,9 +60,9 @@ func ({{.Model}}) Gather(pModelMetadata *ModelMetadata) (ModelName, *Entity, fun
 
 type New{{.Model}} struct {
 	{{range $i, $e := .Keys}}{{if $i}}{{/* Extra range args determines whether a newline is required at the end */}}
-	{{end}}{{.Name}} *{{.Primitive}}{{end}}
+	{{end}}{{.Name}} interface{}{{end}}
 	{{range $i, $e := .Columns}}{{if $i}}
-	{{end}}{{.Name}} *{{.Primitive}}{{end}}
+	{{end}}{{.Name}} interface{}{{end}}
 }
 
 func (o *New{{.Model}}) Get() []interface{} {

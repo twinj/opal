@@ -79,8 +79,6 @@ OPAL
 // String implements the Scanner interface so
 // It can be used as a scan destination, similar to sql.NullString.
 type String struct {
-// TODO consider removing type safety and asserting type at scan
-// by using interfaces - this could make it easier for users
 	Str *string
 }
 
@@ -171,7 +169,8 @@ func (o *Slice) Scan(pValue interface{}) error {
 	if pValue == nil {
 		return nil
 	}
-	return errors.New("Opal.Slice: invalid value to scan into Slice")
+	panic("Opal.String: invalid value to scan into String")
+	return nil
 }
 
 // Slice implements the driver Valuer interface.
@@ -237,7 +236,8 @@ func (o *Int64) Scan(pValue interface{}) error {
 		o.Int64 = &v
 		return nil
 	}
-	return errors.New("Opal.Int64: invalid value to scan into Int64")
+	panic("Opal.Int64: invalid value to scan into Int64")
+	return nil
 }
 
 // Int64 implements the driver Valuer interface.
@@ -299,7 +299,8 @@ func (o *Float64) Scan(pValue interface{}) error {
 		o.Float64 = value
 		return nil
 	}
-	return errors.New("Opal.Float64: invalid value to scan into Float64")
+	panic("Opal.Float64: invalid value to scan into Float64")
+	return nil
 }
 
 // Float64 implements the driver Valuer interface.
@@ -360,9 +361,9 @@ func (o *Bool) Scan(pValue interface{}) error {
 	case *bool:
 		o.Bool = value
 		return nil
-	}   // TODO consider panic at this point programmer error
-	//might break interface
-	return errors.New("Opal.Bool: invalid value to scan into")
+	}
+	panic("Opal.Bool: invalid value to scan into")
+	return nil
 }
 
 // Bool implements the driver Valuer interface.
@@ -420,7 +421,8 @@ func (o *Time) Scan(pValue interface{}) error {
 	if pValue == nil {
 		return nil
 	}
-	return errors.New("Opal.Time: invalid value to scan into")
+	panic("Opal.Time: invalid value to scan into Time")
+	return nil
 }
 
 // Time implements the driver Valuer interface.
@@ -445,26 +447,3 @@ func (o Time) String() string {
 }
 
 // ************************************************
-// TODO consider simplification of
-// var i int64 = 20
-// &i
-
-func A(v interface{}) interface{} {
-	return v
-}
-
-func AInt64(v int64) *int64 {
-	return &v
-}
-
-func AFloat64(v float64) *float64 {
-	return &v
-}
-
-func AString(v string) *string {
-	return &v
-}
-
-func ABool(v bool) *bool {
-	return &v
-}

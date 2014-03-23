@@ -47,9 +47,7 @@ type Validate interface {
 	Validate(pOpal OPAL) bool
 }
 
-/**
- * Hold special data about a domain object model
- */
+// Hold special data about a domain object model
 func NewMetadata(pModel Model, pType reflect.Type) *ModelMetadata {
 	o := new(ModelMetadata)
 	o.this = pType
@@ -70,52 +68,40 @@ func (o *ModelMetadata) addStmt(pDB *sql.DB, pKey string, pValue Sql) {
 		panic(err) // TODO wtf?
 	}
 	o.preparedStatements[pKey] = stmt
-	log.Printf("Opal.ModelMetadata.addStmt: %#v", o.preparedStatements[pKey])
-
+	//log.Printf("Opal.ModelMetadata.addStmt: %#v", o.preparedStatements[pKey])
 }
 
-/**
- * Get the columns metadata
- */
+// Get the columns metadata
 func (o ModelMetadata) Table() Table {
 	return o.table
 }
 
-/**
- * Get the columns metadata
- */
+// Get the columns metadata
 func (o ModelMetadata) Columns() []Column {
 	return o.columns
 }
 
-/**
- * Get the column metadata by its natural index
- */
+// Get the column metadata by its natural index
 func (o ModelMetadata) ColumnByIndex(index int) Column {
 	return o.columns[index]
 }
 
-/**
- * Get the column metadata by the domains field name
- */
+// Get the column metadata by the domains field name
 func (o ModelMetadata) Column(pField string) Column {
 	return *o.columnsByFieldName[pField]
 }
 
-/**
- * Get the column metadata by the domains field index
- */
+// Get the column metadata by the domains field index
 func (o ModelMetadata) ColumnByFieldIndex(pIndex int) Column {
 	return *o.columnsByIndex[pIndex]
 }
 
-/**
- * Get the type of the entity domain parent
- */
+//  Get the type of the entity domain parent
 func (o ModelMetadata) Type() reflect.Type {
 	return o.this
 }
 
+// TODO
 func (o *ModelMetadata) AddTable(pTable Table, pKeyFieldNames ...string) {
 	o.table = pTable
 	o.table.Key = pKeyFieldNames
@@ -136,6 +122,7 @@ type KeyColumn struct {
 	Type GenerationType
 }
 
+// TODO
 func (o *ModelMetadata) AddKey(pField string, pIndex int, pColumn Column, pKind reflect.Kind) {
 	//	k := Key{Auto: true, Type: INCREMENT}
 	//	keyTag := ExtractOpalTags(o.this.FieldByName("Key").Tag)
@@ -172,6 +159,7 @@ func (o *ModelMetadata) AddKey(pField string, pIndex int, pColumn Column, pKind 
 	o.keysByIndex[pIndex] = o.keysByFieldName[pField]
 }
 
+// TODO
 func (o *ModelMetadata) AddColumn(pField string, pIndex int, pColumn Column, pKind reflect.Kind) {
 	tag := ExtractOpalTags(o.this.Field(pIndex).Tag)
 
@@ -204,14 +192,17 @@ func (o *ModelMetadata) AddColumn(pField string, pIndex int, pColumn Column, pKi
 	o.columnsByIndex[pIndex] = o.columnsByFieldName[pField]
 }
 
+// TODO
 func (o *ModelMetadata) AddValidators(pField string, pIndex int, pValidators ...Validator) {
 
 }
 
+// TODO
 func (o *ModelMetadata) ReplaceTableIdentifiers(sql string, fDialect DialectEncoder) string {
 	return strings.Replace(sql, o.this.Name(), fDialect(o.table.Name), -1)
 }
 
+// TODO
 func (o *ModelMetadata) ReplaceColumnIdentifiers(sql string, fDialect DialectEncoder) string {
 	for _, column := range o.columns {
 		sql = strings.Replace(sql, column.Name, fDialect(column.Name), -1)
@@ -219,6 +210,7 @@ func (o *ModelMetadata) ReplaceColumnIdentifiers(sql string, fDialect DialectEnc
 	return sql
 }
 
+// TODO
 func (o *ModelMetadata) ColumnsList(pBuilder *SqlBuilder, fDialect DialectEncoder) *SqlBuilder {
 	for _, column := range o.columns {
 		pBuilder.Add(column.Name).Add(", ")
@@ -227,7 +219,7 @@ func (o *ModelMetadata) ColumnsList(pBuilder *SqlBuilder, fDialect DialectEncode
 }
 
 // Adds columns onto a sql builder in the form
-// :Name, :Name,...  or ?, ?...
+// :Name, :Name,...  or ?, ?...    // TODO
 func (o *ModelMetadata) ColumnsBindList(pBuilder *SqlBuilder, fDialect DialectEncoder) *SqlBuilder {
 	for i := 0; i < len(o.columns); i++ {
 		pBuilder.Add("?, ")
@@ -244,6 +236,7 @@ func (o *ModelMetadata) NonKeyListEqualsNonKeyBindList(pBuilder *SqlBuilder, fDi
 	return pBuilder.Truncate(2)
 }
 
+// TODO
 func (o *ModelMetadata) ColumnsListEqualsColumnsBindList(pBuilder *SqlBuilder, fDialect DialectEncoder) *SqlBuilder {
 	for _, column := range o.columns {
 		pBuilder.Add(column.Name).Add(" = ? AND ")
@@ -251,6 +244,7 @@ func (o *ModelMetadata) ColumnsListEqualsColumnsBindList(pBuilder *SqlBuilder, f
 	return pBuilder.Truncate(5)
 }
 
+// TODO
 func (o *ModelMetadata) KeyListEqualsKeyBindList(pBuilder *SqlBuilder, fDialect DialectEncoder) *SqlBuilder {
 	for _, key := range o.keysByFieldName {
 		pBuilder.Add(key.Name).Add(" = ? AND ")
@@ -258,6 +252,7 @@ func (o *ModelMetadata) KeyListEqualsKeyBindList(pBuilder *SqlBuilder, fDialect 
 	return pBuilder.Truncate(5)
 }
 
+// TODO
 func (o *ModelMetadata) ColumnListWithConstraints(pBuilder *SqlBuilder, fDialect DialectEncoder) *SqlBuilder {
 	if len(o.keysByFieldName) == 1 {
 		for _, key := range o.keysByIndex {
@@ -279,6 +274,7 @@ func (o *ModelMetadata) ColumnListWithConstraints(pBuilder *SqlBuilder, fDialect
 	return pBuilder.Truncate(2)
 }
 
+// TODO
 type JoinColumn struct {
 	Identifier string
 	Name       string
@@ -292,6 +288,7 @@ type JoinColumn struct {
 	Kind       reflect.Kind
 }
 
+// TODO
 type Column struct {
 	Identifier string
 	Name       string
@@ -305,6 +302,7 @@ type Column struct {
 	Kind       reflect.Kind
 }
 
+// TODO
 func (o Column) BuildColumnSchema(pBuilder *SqlBuilder) *SqlBuilder {
 	pBuilder.Add(o.Name)
 	pBuilder.Add(o.ToSqlType())
@@ -325,6 +323,7 @@ func (o Column) nilable(pBuilder *SqlBuilder) {
 	}
 }
 
+// TODO
 func (o Column) ToSqlType() string {
 	switch o.Kind {
 	case reflect.Ptr:
@@ -357,6 +356,7 @@ func (o Column) ToSqlType() string {
 	return fmt.Sprintf(" VARCHAR(%d)", o.Length)
 }
 
+// TODO
 type Table struct {
 	Name string
 	Key  []string

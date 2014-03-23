@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+// Go entity manager
+// This struct acts as a mediator between Models and a sql.DB
 type Gem struct {
 	*sql.DB
 	Dialect
@@ -29,10 +31,14 @@ type Gem struct {
 	// so Entities can be made on the fly
 }
 
+// Gets a copy of the metadata associated with the Model
+// which is identified by its ModelName
 func (o Gem) Metadata(pModelName ModelName) ModelMetadata {
 	return o.allModelsMetadata[pModelName]
 }
 
+// Runs a standard Db query which expects a slice of Models as a result,
+// Will take any Sql interface and the ModelName to identify Model
 func (o Gem) Query(pModelName ModelName, pSql Sql) ([]Model, error) {
 	// Do query and convert results to Models
 	rows, err := o.DB.Query(pSql.String())
@@ -50,6 +56,8 @@ func (o Gem) Query(pModelName ModelName, pSql Sql) ([]Model, error) {
 	return models, nil
 }
 
+// Runs a standard Db query which expects a Model as a result,
+// Will take any Sql interface and the ModelName to identify Model
 // TODO investigate do not support keyword as identifiers it's easier
 func (o Gem) QueryRow(pModelName ModelName, pSql Sql, pArgs ...interface{}) Model {
 	// Do query and convert results to Models
@@ -63,6 +71,7 @@ func (o Gem) QueryRow(pModelName ModelName, pSql Sql, pArgs ...interface{}) Mode
 	return model
 }
 
+// TODO determine requirement error wrapping?
 func (o Gem) Exec(pSql Sql, pArgs ...interface{}) (sql.Result, error) {
 	// Do execution expect a result
 	result, err := o.DB.Exec(pSql.String(), pArgs...)
@@ -75,10 +84,12 @@ func (o Gem) Exec(pSql Sql, pArgs ...interface{}) (sql.Result, error) {
 
 // ******************************************** NOT DEPENDENT ON GEM
 
+// calls the model exec method with delete args and hooks
 func remove(pExecor Execor, pModel Model) Result {
 	return exec(pExecor, pModel, delete, deleteArgs, deleteHooks)
 }
 
+// calls the model exec method with persist args and hooks
 func persist(pExecor Execor, pModel Model, pArgs ...interface{}) Result {
 	fArgs := insertArgs
 	if len(pArgs) > 0 {
@@ -99,6 +110,7 @@ func persist(pExecor Execor, pModel Model, pArgs ...interface{}) Result {
 	return result
 }
 
+// calls the model exec method with update args and hooks
 func merge(pExecor Execor, pModel Model) Result {
 	return exec(pExecor, pModel, update, updateArgs, updateHooks)
 }
