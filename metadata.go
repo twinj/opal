@@ -30,21 +30,6 @@ type ModelMetadata struct {
 
 	// Prepared query store
 	preparedStatements map[string]*sql.Stmt
-
-	// A map of a columns standard Validators
-	// mapped by field name
-	validators map[string][]Validator
-}
-
-type Validator int
-
-const (
-	Presence Validator = iota
-	Length
-)
-
-type Validate interface {
-	Validate(pOpal OPAL) bool
 }
 
 // Hold special data about a domain object model
@@ -131,7 +116,7 @@ func (o *ModelMetadata) AddKey(pField string, pIndex int, pColumn Column, pKind 
 	//	}
 	tag := ExtractOpalTags(o.this.Field(pIndex).Tag)
 	// Set the default values if not specified
-	c := Column{Insertable: true, Length: 255, Nilable: false, Updatable: true}
+	c := Column{Length: 255, Insertable: true, Updatable: true, Nilable: true}
 	if tag.Get("Nilable") != "" {
 		c.Nilable = pColumn.Nilable
 	}
@@ -152,6 +137,7 @@ func (o *ModelMetadata) AddKey(pField string, pIndex int, pColumn Column, pKind 
 	c.Unique = pColumn.Unique
 	c.Precision = pColumn.Precision
 	c.Scale = pColumn.Scale
+	c.AutoIncrement = pColumn.AutoIncrement
 	c.Kind = pKind
 
 	o.columns = append(o.columns, c)
@@ -190,11 +176,6 @@ func (o *ModelMetadata) AddColumn(pField string, pIndex int, pColumn Column, pKi
 	o.columns = append(o.columns, c)
 	o.columnsByFieldName[pField] = &o.columns[len(o.columns)-1]
 	o.columnsByIndex[pIndex] = o.columnsByFieldName[pField]
-}
-
-// TODO
-func (o *ModelMetadata) AddValidators(pField string, pIndex int, pValidators ...Validator) {
-
 }
 
 // TODO
@@ -256,12 +237,17 @@ func (o *ModelMetadata) KeyListEqualsKeyBindList(pBuilder *SqlBuilder, fDialect 
 func (o *ModelMetadata) ColumnListWithConstraints(pBuilder *SqlBuilder, fDialect DialectEncoder) *SqlBuilder {
 	if len(o.keysByFieldName) == 1 {
 		for _, key := range o.keysByIndex {
-			pBuilder.Add(key.Name)
-			// TODO REMOVE fmt.Println(key.Kind.String())
 			if key.Kind == reflect.Int64 {
-				pBuilder.Add(" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT").Add(", ")
-			} // TODO a better way
-			// TODO handle other types
+				pBuilder.Add(key.Name)
+				pBuilder.Add(" INTEGER NOT NULL PRIMARY KEY")
+				if key.AutoIncrement {
+					pBuilder.Add(" AUTOINCREMENT")
+				}
+				pBuilder.Add(", ")
+			} else {
+				key.BuildKeySchema(pBuilder).Add(", ")
+			}// TODO a better way
+			// TODO handle other types and compound keys and different dialects
 		}
 	} else {
 		for _, key := range o.keysByFieldName {
@@ -275,39 +261,31 @@ func (o *ModelMetadata) ColumnListWithConstraints(pBuilder *SqlBuilder, fDialect
 }
 
 // TODO
-type JoinColumn struct {
-	Identifier string
-	Name       string
-	Unique     bool
-	Nilable    bool
-	Insertable bool
-	Updatable  bool
-	Length     uint
-	Precision  uint
-	Scale      uint
-	Kind       reflect.Kind
-}
-
-// TODO
 type Column struct {
-	Identifier string
-	Name       string
-	Unique     bool
-	Nilable    bool
-	Insertable bool
-	Updatable  bool
-	Length     uint
-	Precision  uint
-	Scale      uint
-	Kind       reflect.Kind
+	Identifier    string
+	Name          string
+	AutoIncrement bool
+	Unique        bool
+	Nilable       bool
+	Insertable    bool
+	Updatable     bool
+	Length        uint
+	Precision     uint
+	Scale         uint
+	Kind          reflect.Kind
 }
 
 // TODO
 func (o Column) BuildColumnSchema(pBuilder *SqlBuilder) *SqlBuilder {
-	pBuilder.Add(o.Name)
-	pBuilder.Add(o.ToSqlType())
+	pBuilder.Add(o.Name).Add(o.ToSqlType())
 	o.unique(pBuilder)
 	o.nilable(pBuilder)
+	return pBuilder
+}
+
+// TODO
+func (o Column) BuildKeySchema(pBuilder *SqlBuilder) *SqlBuilder {
+	pBuilder.Add(o.Name).Add(o.ToSqlType()).Add(" NOT NULL PRIMARY KEY")
 	return pBuilder
 }
 
@@ -358,6 +336,6 @@ func (o Column) ToSqlType() string {
 
 // TODO
 type Table struct {
-	Name string
-	Key  []string
+	Name          string
+	Key           []string
 }

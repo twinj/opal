@@ -93,7 +93,7 @@ func (o New{{.Model}}) Save() *{{.Model}} {
 type {{.DAOName}}DAO interface {
 	ModelDAO
 	All() []{{.Model}}
-	Find(int64) *{{.Model}}
+	Find({{range $i, $e := .Keys}}{{if $i}},{{end}}{{.Primitive}}{{end}}) *{{.Model}}
 	Exec(Sql) ([]{{.Model}}, error)
 }
 

@@ -56,8 +56,13 @@ type Entity interface {
 	// the data-store
 	Delete() Result
 
+	// Metadata gets a copy of the Model's metadata
+	Metadata() ModelMetadata
+
 	// String returns a string representation of the Model
 	String() string
+
+	// TODO possible key interface
 
 }
 
@@ -69,12 +74,13 @@ type OpalEntity struct {
 	activeRecord ActiveRecordDAO
 	modelName *ModelName
 	model Model
+	metadata *ModelMetadata
 }
 
-// Pass this function into the GEm to create all base Entities
+// Pass this function into the Gem to create all base Entities
 // for each Model
 func NewEntity(pModelName ModelName) Entity {
-	return &OpalEntity{currentGem.dao, &pModelName, nil}
+	return &OpalEntity{currentGem.dao, &pModelName, nil, nil}
 }
 
 func (o OpalEntity) New(pModel Model) Entity {
@@ -82,6 +88,8 @@ func (o OpalEntity) New(pModel Model) Entity {
 	e.activeRecord = o.activeRecord
 	e.modelName = o.modelName
 	e.model = pModel
+	meta := currentGem.allModelsMetadata[*e.modelName]
+	e.metadata = &meta
 	return e
 }
 
@@ -109,6 +117,10 @@ func (o *OpalEntity) Save() Result {
 
 func (o *OpalEntity) Delete() Result {
 	return o.activeRecord.Delete(o.model)
+}
+
+func (o *OpalEntity) Metadata() ModelMetadata {
+	return *o.metadata
 }
 
 func (o *OpalEntity) String() string {

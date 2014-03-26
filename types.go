@@ -20,14 +20,26 @@ const (
 )
 
 var (
-	opal        OpalMagic = opalMagic
-	nilPtrError           = errors.New("Destination pointer is nil") // embedded in descriptive error
+	lockOpal bool
+	opal OpalMagic = opalMagic
 )
+
+// Allows a user to set their own id
+// Can only be run once
+// Initial Gem startup will run this to check
+func SetMagic(pId *OpalMagic) {
+	if lockOpal {
+		return
+	}
+	lockOpal = true
+	if pId != nil {
+		opal = *pId
+	}
+}
 
 // *****************************************  OPAL TYPE SYSTEM
 
-// TODO allow programmers to specify their own magic
-// A simple type to return the identifying global opal
+// A simple type to return the global identifying opal
 type OpalMagic int
 
 // Interface OPAL acts as a shoe horn for valid types in a model
@@ -47,23 +59,6 @@ func (Opal) opal() OpalMagic {
 // Opal partially implements the opal.OPAL interface
 func (Opal) Kind() reflect.Kind {
 	return Embedded
-}
-
-func Kind() reflect.Kind {
-	var opal OPAL
-	switch opal.(type) {
-	case String:
-		return reflect.String
-	case Int64:
-		return reflect.Int64
-	case Float64:
-		return reflect.Float64
-	case Bool:
-		return reflect.Bool
-		// TODO FINISH TYPES
-	default:
-		panic("Opal.Kind: non supported type")
-	}
 }
 
 // **********************************************  SPECIAL TYPES
@@ -261,6 +256,16 @@ func (o Int64) String() string {
 	return fmt.Sprint(nil)
 }
 
+// Is an Int64 under the covers where its name flags its use
+type AutoIncrement struct {
+	Int64
+}
+
+// Makes a new AutoIncrement
+func NewAutoIncrement(p int64) *AutoIncrement {
+	return &AutoIncrement{NewInt64(p)}
+}
+
 // ************************************************  FLOAT64 TYPE
 
 // Float64 represents an int64 that may be null.
@@ -447,3 +452,7 @@ func (o Time) String() string {
 }
 
 // ************************************************
+
+func ABool(p bool) *bool {
+	return &p
+}

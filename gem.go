@@ -29,6 +29,7 @@ type Gem struct {
 
 	// TODO make it work without INIT add reflection based like Gorp
 	// so Entities can be made on the fly
+
 }
 
 // Gets a copy of the metadata associated with the Model
@@ -104,11 +105,17 @@ func persist(pExecor Execor, pModel Model, pArgs ...interface{}) Result {
 	// TODO dialect for Id
 	var id int64
 	if id, result.Error = result.LastInsertId(); result.Error == nil {
-		k := pModel.Keys()[0].(*Int64)
-		k.A(id)
+		v, ok := pModel.Keys()[0].(*AutoIncrement)
+		if ok {
+			v.A(id)
+		}
+		v2, ok := pModel.Keys()[0].(*Int64)
+		if ok {
+			v2.A(id)
+		}
 	}
 	return result
-}
+}   // TODO metadata API and interface - check security
 
 // calls the model exec method with update args and hooks
 func merge(pExecor Execor, pModel Model) Result {
@@ -127,7 +134,7 @@ func exec(pExecor Execor, pModel Model, pNamedStmt string, fArgs ModelArgs, fMod
 	// TODO delete bug
 	if pNamedStmt == delete {
 		fmt.Println(pModel.ModelName(), pNamedStmt, "Delete here")
-		fmt.Printf("%#v",  pExecor.ExecorStmt(pModel.ModelName(), pNamedStmt))
+		fmt.Printf("%#v", pExecor.ExecorStmt(pModel.ModelName(), pNamedStmt))
 	}
 	result, err := pExecor.ExecorStmt(pModel.ModelName(), pNamedStmt).Exec(fArgs(pModel)...)
 	if err != nil {

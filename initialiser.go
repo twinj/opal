@@ -13,7 +13,7 @@ import (
 	"log"
 	"os"
 	"reflect"
-	_ "strconv"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -92,6 +92,7 @@ func gatherTemplateData(pModels []Domain) {
 	for _, domain := range pModels {
 		t := reflect.TypeOf(domain).Elem()
 		var dType TemplateType
+		//var useDefaultKey bool
 		dType.Domain = domain
 		dType.Version = plate.Version
 		dType.Date = plate.Date
@@ -105,6 +106,8 @@ func gatherTemplateData(pModels []Domain) {
 
 		s := strings.Split(dType.Path, "/")
 		dType.Package = s[len(s)-1]
+
+		var keys map[string]bool = make(map[string]bool)
 		var i int
 		if t.Field(i).Type.Implements(reflect.TypeOf((*Entity)(nil)).Elem()) && t.Field(i).Anonymous {
 			opalTags := ExtractOpalTags(t.Field(i).Tag)
@@ -114,6 +117,14 @@ func gatherTemplateData(pModels []Domain) {
 				dType.Table = fmt.Sprintf("Name: %q", inflect.Tableize(dType.Model))
 			} else {
 				dType.Table = string(opalTags)
+			}
+			if opalTags.Get("Key") == "" {
+				//useDefaultKey = true
+				keys["Id"] = true
+			} else {
+				// TODO support compound keys
+				key, _ := strconv.Unquote(opalTags.Get("Key"))
+				keys[key] = true
 			}
 			i++
 		} else {
@@ -126,7 +137,6 @@ func gatherTemplateData(pModels []Domain) {
 		// if not panic - invalid Entity
 		opal := reflect.TypeOf((*OPAL)(nil)).Elem()
 
-		var keys map[string]bool = make(map[string]bool)
 		if t.Field(i).Type.Name() == "Key" && t.Field(i).Anonymous {
 			opalTags := ExtractOpalTags(t.Field(i).Tag)
 
@@ -137,11 +147,8 @@ func gatherTemplateData(pModels []Domain) {
 				panic("Opal.runTemplate: Key metatag error")
 			}
 			i++
-		} else {
-			// TODO Use default Int 64 key
-			keys["Id"] = true
-			//log.Fatalf("Opal.runTemplate: Model does not anonymously embed Key interface at field position 1.")
 		}
+
 		// Check each field if its an OPAL extract its metadata
 		for i < t.NumField() {
 			if t.Field(i).Type.Implements(opal) {
@@ -154,8 +161,13 @@ func gatherTemplateData(pModels []Domain) {
 					opalTags = Tag(fmt.Sprintf("Name: %q, %s", t.Field(i).Name, opalTags))
 				}
 				if keys[t.Field(i).Name] {
+					if t.Field(i).Type.Name() == "AutoIncrement" {
+						opalTags += ", AutoIncrement: true"
+					}
 					kind := reflect.Kind(reflect.New(t.Field(i).Type).MethodByName("Kind").Call(nil)[0].Uint())
-					dType.Keys = append(dType.Keys, KeyField{t.Field(i).Name, t.Field(i).Type.Name(), i, string(opalTags), getKind(t.Field(i).Type.Name()), kind.String()})
+					key := KeyField{t.Field(i).Name, t.Field(i).Type.Name(), i, string(opalTags), getKind(t.Field(i).Type.Name()), kind.String()}
+
+					dType.Keys = append(dType.Keys, key)
 				} else {
 					kind := reflect.Kind(reflect.New(t.Field(i).Type).MethodByName("Kind").Call(nil)[0].Uint())
 					s := kind.String()
@@ -203,6 +215,8 @@ func getKind(pName string) string {
 	case "String":
 		return "reflect.String"
 	case "Int64":
+		return "reflect.Int64"
+	case "AutoIncrement":
 		return "reflect.Int64"
 	case "Float64":
 		return "reflect.Float64"

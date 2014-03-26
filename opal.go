@@ -27,8 +27,6 @@ const (
 )
 
 var (
-	done bool
-
 	// The current instance - instances can be swapped out
 	// TODO create a package only handle set by the user
 	currentGem *Gem
@@ -152,6 +150,7 @@ func (o *ModelIDAO) SqlBuilder(pModelName ModelName) *SqlBuilder {
 // gets a primary key unique constraint error
 func (o *ModelIDAO) Insert(pModel Model) Result {
 	if o.gem.tx == nil {
+		// TODO remove?
 		builder := o.SqlBuilder(pModel.ModelName()).Insert().Values()
 		fPre, fPost := insertHooks(pModel)
 		if fPre != nil {
@@ -166,8 +165,15 @@ func (o *ModelIDAO) Insert(pModel Model) Result {
 		}
 		// TODO dialect for Id
 		if id, err := result.LastInsertId(); err == nil {
-			k := pModel.Keys()[0].(*Int64)
-			k.A(id)
+			// TODO compound key
+			v, ok := pModel.Keys()[0].(*AutoIncrement)
+			if ok {
+				v.A(id)
+			}
+			v2, ok := pModel.Keys()[0].(*Int64)
+			if ok {
+				v2.A(id)
+			}
 		}
 		if fPost != nil {
 			err := fPost()
@@ -217,6 +223,7 @@ type StartArgs struct {
 	DB *sql.DB
 	Dialect   Dialect
 	CreateEntity func(ModelName) Entity
+	Id *OpalMagic
 }
 
 func GEM(o StartArgs) *Gem {
@@ -226,6 +233,8 @@ func GEM(o StartArgs) *Gem {
 	gem.dao = &ModelIDAO{gem: gem}
 	gem.DB = o.DB
 	gem.funcCreateDomainEntity = o.CreateEntity
+
+	SetMagic(o.Id)
 	if gem.funcCreateDomainEntity == nil {
 		gem.funcCreateDomainEntity = NewEntity
 	}
@@ -237,7 +246,7 @@ func GEM(o StartArgs) *Gem {
 	for _, face := range models {
 		model, ok := face.(Model)
 		if !ok {
-			panic("Opal.Start: You cannot pass a type which does not implement Model.")
+			panic("Opal.Start: You cannot pass a type which does not implement the Model interface.")
 		}
 		// TODO option for fuller path name
 		t := reflect.TypeOf(model).Elem()
@@ -275,7 +284,6 @@ func GEM(o StartArgs) *Gem {
 		meta.addStmt(gem.DB, update, builder.Update().WherePk().Sql())
 		meta.addStmt(gem.DB, delete, builder.Delete().WherePk().Sql())
 	}
-	done = true
 	return currentGem
 }
 
