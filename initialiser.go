@@ -285,7 +285,9 @@ type Tag string
 // If the tag does not have the conventional format, the value
 // returned by Get is unspecified.
 func (tag Tag) Get(key string) string {
+
 	for tag != "" {
+		var quoted = true
 		// skip leading space
 		i := 0
 		for i < len(tag) && tag[i] == ' ' {
@@ -310,16 +312,24 @@ func (tag Tag) Get(key string) string {
 		tag = tag[i+1:]
 		i = 0
 		// if a space is included skip it - only supports one
-		for i < len(tag) && tag[i] == ' ' {
+		if i < len(tag) && tag[i] == ' ' {
 			i++
 		}
-		i++
-		// scan quoted string to find value if value is not quoted check for
+		// Skips quote but what if not quoted value
+		if i < len(tag) && tag[i] != '"' {
+			quoted = false
+		} else {
+			i++
+		}
+		// Scan quoted string to find value if value is not quoted check for
 		// comma
-		for i < len(tag) && !(tag[i] == '"' || tag[i] == ',') {
+		for i < len(tag) && !( (quoted && tag[i] == '"') || ( ! quoted && tag[i] == ',')) {
 			if tag[i] == '\\' {
 				i++
 			}
+			i++
+		}
+		if quoted {
 			i++
 		}
 		if i >= len(tag) {
@@ -329,6 +339,7 @@ func (tag Tag) Get(key string) string {
 		tag = tag[i+1:]
 		if key == name {
 			value = strings.Trim(value, " ")
+			value = strings.Trim(value, ",")
 			/*if ! strings.Contains(value, `"`) {
 				return value
 			}

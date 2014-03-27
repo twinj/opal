@@ -88,7 +88,7 @@ func (o *Txn) Go() (result Result, success bool) {
 	o.result = o.funcAction(Transaction{o})
 	for key, txStmt := range o.gem.txPreparedStatements {
 		txStmt.Close()
-		//delete(o.gem.txPreparedStatements, key)
+		// delete(o.gem.txPreparedStatements, key)
 		// TODO Delete here
 		o.gem.txPreparedStatements[key] = nil
 	}
