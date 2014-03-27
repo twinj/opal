@@ -204,10 +204,7 @@ func gatherTemplateData(pModels []Domain) {
 // Helper to retrieve Type name and package name with which we
 // use to name a Model within the domain
 func importName(pType reflect.Type) string {
-	s := strings.Split(pType.PkgPath(), "/")[0]
-	s = strings.TrimLeft(pType.PkgPath(), s+"/")
-	s = fmt.Sprintf("%s.%s", s, pType.Name())
-	return s
+	return fmt.Sprintf("%v", pType)
 }
 
 func getKind(pName string) string {
@@ -241,8 +238,6 @@ func ExtractOpalTags(pStructTag reflect.StructTag) Tag {
 	}
 	return Tag("")
 }
-
-// TODO Could map all tags
 
 func runTemplate(e ModelTemplate) {
 	// Create a template, add the function map, and parse the text.

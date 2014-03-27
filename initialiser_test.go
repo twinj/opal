@@ -1,6 +1,7 @@
 package opal
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -30,5 +31,14 @@ func TestTagGet(t *testing.T) {
 		if v := tt.Tag.Get(tt.Key); v != tt.Value {
 			t.Errorf("Tag(%#q).Get(%#q) = %#q, want %#q", tt.Tag, tt.Key, v, tt.Value)
 		}
+	}
+}
+
+func TestImportName(t *testing.T) {
+	type T struct {}
+	r := reflect.TypeOf(T{})
+	s := importName(r)
+	if s != "opal.T" {
+		t.Errorf("importName(%#q) = %#q, want %#q", r, s, "opal.T")
 	}
 }
