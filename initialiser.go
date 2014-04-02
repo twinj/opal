@@ -201,44 +201,6 @@ func gatherTemplateData(pModels []Domain) {
 	runTemplate(plate)
 }
 
-// Helper to retrieve Type name and package name with which we
-// use to name a Model within the domain
-func importName(pType reflect.Type) string {
-	return fmt.Sprintf("%v", pType)
-}
-
-func getKind(pName string) string {
-	switch pName {
-	case "String":
-		return "reflect.String"
-	case "Int64":
-		return "reflect.Int64"
-	case "AutoIncrement":
-		return "reflect.Int64"
-	case "Float64":
-		return "reflect.Float64"
-	case "Bool":
-		return "reflect.Bool"
-	case "Key":
-		return "PrimaryKey"
-	case "Time":
-		return "OpalTime"
-	case "Slice":
-		return "reflect.Slice"
-	default:
-		panic("Opal.Kind: non supported type")
-	}
-}
-
-func ExtractOpalTags(pStructTag reflect.StructTag) Tag {
-	tag := string(pStructTag)
-	if strings.Count(tag, "|") == 2 {
-		tag = strings.Split(tag, "|")[1] // TODO check proper form
-		return Tag(tag)
-	}
-	return Tag("")
-}
-
 func runTemplate(e ModelTemplate) {
 	// Create a template, add the function map, and parse the text.
 	b, err := ioutil.ReadFile("src/github.com/twinj/opal/entity.template")
@@ -274,6 +236,15 @@ func runTemplate(e ModelTemplate) {
 // and colon (U+003A ':').  Each value is quoted using U+0022 '"'
 // characters and Go string literal syntax.
 type Tag string
+
+func ExtractOpalTags(pStructTag reflect.StructTag) Tag {
+	tag := string(pStructTag)
+	if strings.Count(tag, "|") == 2 {
+		tag = strings.Split(tag, "|")[1]
+		return Tag(tag)
+	}
+	return Tag("")
+}
 
 // Get returns the value associated with key in the tag string.
 // If there is no such key in the tag, Get returns the empty string.
@@ -345,3 +316,33 @@ func (tag Tag) Get(key string) string {
 	}
 	return ""
 }
+
+// Helper to retrieve Type name and package name with which we
+// use to name a Model within the domain
+func importName(pType reflect.Type) string {
+	return fmt.Sprintf("%v", pType)
+}
+
+func getKind(pName string) string {
+	switch pName {
+	case "String":
+		return "reflect.String"
+	case "Int64":
+		return "reflect.Int64"
+	case "AutoIncrement":
+		return "reflect.Int64"
+	case "Float64":
+		return "reflect.Float64"
+	case "Bool":
+		return "reflect.Bool"
+	case "Key":
+		return "PrimaryKey"
+	case "Time":
+		return "OpalTime"
+	case "Slice":
+		return "reflect.Slice"
+	default:
+		panic("Opal.Kind: non supported type")
+	}
+}
+
