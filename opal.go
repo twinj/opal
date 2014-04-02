@@ -33,7 +33,7 @@ var (
 )
 
 func init() {
-	version.System(group, opalMagic, release, iteration, revision, api, "OPAL")
+	version.Init(group, opalMagic, release, iteration, revision, api, "OPAL")
 }
 
 // Copy a Gem into the packages address to be used as the current service
