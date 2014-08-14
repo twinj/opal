@@ -18,7 +18,7 @@ var _ Model = &{{.Model}}{}
 var _ {{.DAOName}}DAO = &{{.DAOName}}IDAO{}
 
 // Constant ModelName used to identify type
-const {{.Model}}_ ModelName = "{{.ImportName}}"
+const {{.Model}}Model ModelName = "{{.ImportName}}"
 
 // The {{.Model}} Entity - deliberately private
 var _{{.Model}} Entity
@@ -28,14 +28,14 @@ var {{.DAOName}} {{.DAOName}}DAO
 
 // *************************************************** MODEL
 
-func Init{{.Model}}() *{{.Model}} {
+func Raw{{.Model}}() *{{.Model}} {
 	o := new({{.Model}})
 	o.Entity = _{{.Model}}.New(o)
 	return o
 }
 
 func ({{.Model}}) ScanInto() (Model, []interface{}) {
-	o := Init{{.Model}}()
+	o := Raw{{.Model}}()
 	return o, BindArgs(o)
 }
 
@@ -53,19 +53,19 @@ func ({{.Model}}) Gather(pModelMetadata *ModelMetadata) (ModelName, *Entity, fun
 	{{end}}pModelMetadata.AddKey({{printf "%q" .Name}}, {{.Index}}, Column{ {{.Tag}} }, {{.Kind}}){{end}}
 	{{range $i, $e := .Columns}}{{if $i}}
 	{{end}}pModelMetadata.AddColumn({{printf "%q" .Name}}, {{.Index}}, Column{ {{.Tag}} }, {{.Kind}}){{end}}
-	return {{.Model}}_, &_{{.Model}}, new{{.DAOName}}DAO
+	return {{.Model}}Model, &_{{.Model}}, new{{.DAOName}}DAO
 }
 
 // ************************************************* HELPERS
 
-type New{{.Model}} struct {
+type {{.Model}}_ struct {
 	{{range $i, $e := .Keys}}{{if $i}}{{/* Extra range args determines whether a newline is required at the end */}}
 	{{end}}{{.Name}} interface{}{{end}}
 	{{range $i, $e := .Columns}}{{if $i}}
 	{{end}}{{.Name}} interface{}{{end}}
 }
 
-func (o *New{{.Model}}) Get() []interface{} {
+func (o *{{.Model}}_) Args() []interface{} {
 	return []interface{}{
 		{{range $i, $e := .Keys}}{{if $i}}{{/* Extra range args determines whether a newline is required at the end */}}
 		{{end}}o.{{.Name}},{{end}}
@@ -74,18 +74,46 @@ func (o *New{{.Model}}) Get() []interface{} {
 	}
 }
 
-func (o *New{{.Model}}) Scan(pModel *{{.Model}}) {
+func (o *{{.Model}}_) Scan(pModel *{{.Model}}) {
 		{{range $i, $e := .Keys}}{{if $i}}{{/* Extra range args determines whether a newline is required at the end */}}
 		{{end}}pModel.{{.Name}}.Scan(o.{{.Name}}){{end}}
 		{{range $i, $e := .Columns}}{{if $i}}
 		{{end}}pModel.{{.Name}}.Scan(o.{{.Name}}){{end}}
 }
 
-func (o New{{.Model}}) Save() *{{.Model}} {
-	m := Init{{.Model}}()
+func (o {{.Model}}_) New() *{{.Model}} {
+	return o.Insert()
+}
+
+func (o {{.Model}}_) Create() *{{.Model}} {
+	return o.Insert()
+}
+
+func (o {{.Model}}_) Merge() *{{.Model}} {
+	return o.Save()
+}
+
+func (o {{.Model}}_) Update() *{{.Model}} {
+	return o.Save()
+}
+
+func (o {{.Model}}_) Insert() *{{.Model}} {
+	m := Raw{{.Model}}()
 	o.Scan(m)
 	m.Insert()
 	return m
+}
+
+func (o {{.Model}}_) Save() *{{.Model}} {
+	if {{range $i, $e := .Keys}}{{if $i}}&& {{end}}o.{{.Name}} != nil{{end}} {
+		m := {{.DAOName}}.Find({{range $i, $e := .Keys}}{{if $i}}, {{end}}o.{{.Name}}.({{.Primitive}}){{end}})
+		if m != nil {
+			o.Scan(m)
+			m.Save()
+			return m
+		}
+	}
+	return o.Insert()
 }
 
 // ***************************************************** DAO
@@ -109,15 +137,15 @@ func new{{.DAOName}}DAO(pModelDAO *ModelIDAO) ModelDAO {
 }
 
 func (o {{.DAOName}}IDAO) All() []{{.Model}} {
-	return o.CastAll(o.FindAllModels({{.Model}}_))
+	return o.CastAll(o.FindAllModels({{.Model}}Model))
 }
 
 func (o {{.DAOName}}IDAO) Find({{range $i, $e := .Keys}}{{if $i}}, {{end}}p{{printf "%d" $i}} {{.Primitive}}{{end}}) *{{.Model}} {
-	return o.Cast(o.FindModel({{.Model}}_, {{range $i, $e := .Keys}}{{if $i}}, {{end}}New{{.TypeName}}(p{{printf "%d" $i}}){{end}}))
+	return o.Cast(o.FindModel({{.Model}}Model, {{range $i, $e := .Keys}}{{if $i}}, {{end}}New{{.TypeName}}(p{{printf "%d" $i}}){{end}}))
 }
 
 func (o {{.DAOName}}IDAO) Exec(pSql Sql) ([]{{.Model}}, error) {
-	rows, err := o.Gem().Query({{.Model}}_, pSql)
+	rows, err := o.Gem().Query({{.Model}}Model, pSql)
 	if err != nil {
 		return nil, err
 	}

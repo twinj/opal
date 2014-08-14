@@ -82,7 +82,7 @@ type OpalEntity struct {
 func NewEntity(pModelName ModelName) Entity {
 	return &OpalEntity{currentGem.dao, &pModelName, nil, nil}
 }
-
+// TODO shrink use of instances here if possible heavy on performance
 func (o OpalEntity) New(pModel Model) Entity {
 	e := new(OpalEntity)
 	e.activeRecord = o.activeRecord

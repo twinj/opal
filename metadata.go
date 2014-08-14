@@ -30,6 +30,8 @@ type ModelMetadata struct {
 
 	// Prepared query store
 	preparedStatements map[string]*sql.Stmt
+
+	Service ModelDAO
 }
 
 // Hold special data about a domain object model
