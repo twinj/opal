@@ -143,7 +143,9 @@ func (o String) String() string {
 
 // Slice implements the Scanner interface so
 // It can be used as a scan destination, similar to sql.NullString.
-type Slice []byte
+type Slice struct {
+	Slice []byte
+}
 
 // Slice implements the opal.OPAL interface
 func (Slice) opal() OpalMagic {
@@ -152,44 +154,51 @@ func (Slice) opal() OpalMagic {
 
 // Convenience constructor for a Slice
 func NewSlice(p []byte) Slice {
-	return Slice(p)
+	return Slice{p}
 }
 
 // Convenience setting method
 func (o *Slice) A(p []byte) {
-	*o = Slice(p)
+	o.Slice = p
 }
 
 // Slice implements the sql.Scanner interface.
 func (o *Slice) Scan(pValue interface{}) error {
-	if value, ok := pValue.([]byte); ok {
-		*o = make([]byte, len(value))
-		copy(*o, value)
-		return nil
-	}
 	if pValue == nil {
 		return nil
 	}
+	switch value := pValue.(type) {
+	case []byte:
+		o.Slice = make([]byte, len(value))
+		copy(o.Slice, value)
+		return nil
+	case *[]byte:
+		o.Slice = make([]byte, len(*value))
+		copy(o.Slice, *value)
+		return nil
+	}
+//	if value, ok := pValue.([]byte); ok {
+//		*o = make([]byte, len(value))
+//		copy(*o, value)
+//		return nil
+//	}
 	panic("Opal.String: invalid value to scan into String")
 	return nil
 }
 
 // Slice implements the driver Valuer interface.
 func (o *Slice) Value() (driver.Value, error) {
-	if *o == nil {
-		return nil, nil
-	}
-	return *o, nil
+	return o.Slice, nil
 }
 
 // Returns the primitive type
 func (o Slice) Kind() reflect.Kind {
 	return reflect.Slice
-}
+} // TODO reduce slice to itself to get rid of scan
 
 // Prints the value
 func (o Slice) String() string {
-	return string(o)
+	return string(o.Slice)
 }
 
 // **************************************************  INT64 TYPE
