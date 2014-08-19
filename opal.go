@@ -74,18 +74,26 @@ type ModelDAO interface {
 	ActiveRecordDAO
 
 	// Find all models within the domain
-	FindAllModels(pModelName ModelName) []Model
+	FindAllModels() []Model
 
 	// Find a specific Model using its keys
-	FindModel(pModelName ModelName, pKeys ...interface{}) Model
+	FindModel(pKeys ...interface{}) Model
 
 	// Create a Sql Builder for the specified Model
-	SqlBuilder(pModelName ModelName) *SqlBuilder
+	SqlBuilder() *SqlBuilder
+
+	// Returns the ModelName associated with this instance
+	Model() ModelName
 }
 
 // ModelIDAO Implements ModelDAO
 type ModelIDAO struct {
 	gem *Gem
+	model ModelName
+}
+
+func (o ModelIDAO) Model() ModelName {
+	return o.model
 }
 
 // Opal partially implements the opal OPAL interface
@@ -103,8 +111,8 @@ func (o ModelIDAO) Gem() Gem {
 	return *o.gem
 }
 
-func (o ModelIDAO) FindAllModels(pModelName ModelName) []Model {
-	meta := o.gem.allModelsMetadata[pModelName]
+func (o ModelIDAO) FindAllModels() []Model {
+	meta := o.gem.allModelsMetadata[o.Model()]
 	// TODO what if lose connection
 	stmt := meta.preparedStatements[findAll]
 	rows, err := stmt.Query()
@@ -123,8 +131,8 @@ func (o ModelIDAO) FindAllModels(pModelName ModelName) []Model {
 }
 
 // TODO better key solution
-func (o ModelIDAO) FindModel(pModelName ModelName, pKeys ...interface{}) Model {
-	meta := o.gem.allModelsMetadata[pModelName]
+func (o ModelIDAO) FindModel(pKeys ...interface{}) Model {
+	meta := o.gem.allModelsMetadata[o.Model()]
 	stmt := meta.preparedStatements[find]
 	row := stmt.QueryRow(pKeys...)
 	model, args := meta.ScanInto()
@@ -137,8 +145,8 @@ func (o ModelIDAO) FindModel(pModelName ModelName, pKeys ...interface{}) Model {
 	return model
 }
 
-func (o *ModelIDAO) SqlBuilder(pModelName ModelName) *SqlBuilder {
-	meta := o.gem.allModelsMetadata[pModelName]
+func (o *ModelIDAO) SqlBuilder() *SqlBuilder {
+	meta := o.gem.allModelsMetadata[o.Model()]
 	builder := new(SqlBuilder)
 	builder.ModelMetadata = &meta
 	builder.Dialect = o.gem.Dialect
@@ -151,7 +159,7 @@ func (o *ModelIDAO) SqlBuilder(pModelName ModelName) *SqlBuilder {
 func (o *ModelIDAO) Insert(pModel Model) Result {
 	if o.gem.tx == nil {
 		// TODO remove?
-		builder := o.SqlBuilder(pModel.ModelName()).Insert().Values()
+		builder := o.SqlBuilder().Insert().Values()
 		fPre, fPost := insertHooks(pModel)
 		if fPre != nil {
 			err := fPre()
@@ -194,9 +202,9 @@ func (o *ModelIDAO) Delete(pModel Model) Result {
 	return remove(o, pModel)
 }
 
-func (o *ModelIDAO) ExecorStmt(pModelName ModelName, pNamedStmt string) *sql.Stmt {
+func (o *ModelIDAO) ExecorStmt(pModel ModelName, pNamedStmt string) *sql.Stmt {
 	// TODO handle disconnections
-	stmt := o.gem.allModelsMetadata[pModelName].preparedStatements[pNamedStmt]
+	stmt := o.gem.allModelsMetadata[pModel].preparedStatements[pNamedStmt]
 	if o.gem.tx == nil {
 		return stmt
 	}
@@ -256,22 +264,22 @@ func GEM(o StartArgs) *Gem {
 		meta := NewMetadata(model, t)
 
 		// Gather the metadata and save into the ModelMetadata holder
-		modelName, entity, modelDAO := model.Gather(meta) // TODO somehow detach Gather from model and initialise another way
-
-		// Add the ModelName to the map for retrieving metadata
-		gem.modelNames = append(gem.modelNames, modelName)
-		gem.allModelsMetadata[modelName] = *meta
-		gem.allModelsEntity[modelName] = entity
+		name, entity, modelDAOf := model.Gather(meta) // TODO somehow detach Gather from model and initialise another way
 
 		// Inject OpalDAOs into Model DAOs
 		// TODO report
-		modelDAO(gem.dao)
+		modelDAO := modelDAOf(&ModelIDAO{gem, name})
+
+		// Add the ModelName to the map for retrieving metadata
+		gem.modelNames = append(gem.modelNames, modelDAO.Model())
+		gem.allModelsMetadata[modelDAO.Model()] = *meta
+		gem.allModelsEntity[modelDAO.Model()] = entity
 
 		// Save an entity instance into the provided address
-		*gem.allModelsEntity[modelName] = gem.funcCreateDomainEntity(modelName)
+		*gem.allModelsEntity[modelDAO.Model()] = gem.funcCreateDomainEntity(modelDAO.Model())
 
 		// Generate prepared statements
-		builder := gem.dao.SqlBuilder(modelName)
+		builder := modelDAO.SqlBuilder()
 
 		// Create tables if necessary
 		table := builder.Create().Sql()

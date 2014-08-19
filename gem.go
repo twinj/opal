@@ -152,7 +152,7 @@ func exec(pExecor Execor, pModel Model, pNamedStmt string, fArgs ModelArgs, fMod
 type Execor interface {
 	// Retrieve the statement required for the database work
 	// TODO handle discons
-	ExecorStmt(pModelName ModelName, pNamedStmt string) *sql.Stmt
+	ExecorStmt(pModel ModelName, pNamedStmt string) *sql.Stmt
 }
 
 // Result is a wrapper around a sql.Result and any

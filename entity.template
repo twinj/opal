@@ -137,11 +137,11 @@ func new{{.DAOName}}DAO(pModelDAO *ModelIDAO) ModelDAO {
 }
 
 func (o {{.DAOName}}IDAO) All() []{{.Model}} {
-	return o.CastAll(o.FindAllModels({{.Model}}Model))
+	return o.CastAll(o.FindAllModels())
 }
 
 func (o {{.DAOName}}IDAO) Find({{range $i, $e := .Keys}}{{if $i}}, {{end}}p{{printf "%d" $i}} {{.Primitive}}{{end}}) *{{.Model}} {
-	return o.Cast(o.FindModel({{.Model}}Model, {{range $i, $e := .Keys}}{{if $i}}, {{end}}New{{.TypeName}}(p{{printf "%d" $i}}){{end}}))
+	return o.Cast(o.FindModel({{range $i, $e := .Keys}}{{if $i}}, {{end}}New{{.TypeName}}(p{{printf "%d" $i}}){{end}}))
 }
 
 func (o {{.DAOName}}IDAO) Exec(pSql Sql) ([]{{.Model}}, error) {
