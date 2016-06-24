@@ -4,8 +4,6 @@
  */
 package opal
 
-import ()
-
 // The Dialect interface performs sql syntax modification to conform
 // to the differences in implementations of the SQL standard.
 // Initially the Dialect will be made with the differences of Sqlite3

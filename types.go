@@ -5,8 +5,8 @@
 package opal
 
 import (
-	"database/sql/driver"
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"reflect"
@@ -23,12 +23,11 @@ const (
 
 var (
 	lockOpal bool
-	opal OpalMagic = opalMagic
+	opal     OpalMagic = opalMagic
 )
 
 // Borrowed from sql library
 var errNilPtr = errors.New("destination pointer is nil") // embedded in descriptive error
-
 
 // Allows a user to set their own id
 // Can only be run once
@@ -43,35 +42,35 @@ func SetMagic(pId *OpalMagic) {
 	}
 }
 
-// *****************************************  OPAL TYPE SYSTEM
+// *****************************************  Opal TYPE SYSTEM
 
 // A simple type to return the global identifying opal
 type OpalMagic int
 
-// Interface OPAL acts as a shoe horn for valid types in a model
-type OPAL interface {
+// Interface Opal acts as a shoe horn for valid types in a model
+type Opal interface {
 	opal() OpalMagic
 	Kind() reflect.Kind
 }
 
 // An embeddable struct with which to create your own types
-type Opal struct{}
+type T struct{}
 
-// Opal partially implements the opal.OPAL interface
-func (Opal) opal() OpalMagic {
+// T partially implements the opal.Opal interface
+func (T) opal() OpalMagic {
 	return opal
 }
 
-// Opal partially implements the opal.OPAL interface
-func (Opal) Kind() reflect.Kind {
+// T partially implements the opal.Opal interface
+func (T) Kind() reflect.Kind {
 	return Embedded
 }
 
 // **********************************************  SPECIAL TYPES
 
-// Key is a special type of opal.OPAL
+// Key is a special type of opal.Opal
 type Key interface {
-OPAL
+	Opal
 }
 
 // ************************************************  STRING TYPE
@@ -83,7 +82,7 @@ type String struct {
 	Str *string
 }
 
-// String implements the opal.OPAL interface
+// String implements the opal.Opal interface
 func (String) opal() OpalMagic {
 	return opal
 }
@@ -147,7 +146,7 @@ type Slice struct {
 	Slice []byte
 }
 
-// Slice implements the opal.OPAL interface
+// Slice implements the opal.Opal interface
 func (Slice) opal() OpalMagic {
 	return opal
 }
@@ -177,11 +176,11 @@ func (o *Slice) Scan(pValue interface{}) error {
 		copy(o.Slice, *value)
 		return nil
 	}
-//	if value, ok := pValue.([]byte); ok {
-//		*o = make([]byte, len(value))
-//		copy(*o, value)
-//		return nil
-//	}
+	//	if value, ok := pValue.([]byte); ok {
+	//		*o = make([]byte, len(value))
+	//		copy(*o, value)
+	//		return nil
+	//	}
 	panic("Opal.String: invalid value to scan into String")
 	return nil
 }
@@ -210,7 +209,14 @@ type Int64 struct {
 	Int64 *int64
 }
 
-// Int64 implements the opal.OPAL interface
+type Type interface {
+	Scan(interface{}) error
+	Interface() interface{}
+	Value() (driver.Value, error)
+	String() string
+}
+
+// Int64 implements the opal.Opal interface
 func (Int64) opal() OpalMagic {
 	return opal
 }
@@ -244,7 +250,8 @@ func (o *Int64) Scan(pValue interface{}) error {
 		*o.Int64 = int64(value)
 		return nil
 	case *int64:
-		o.Int64 = value
+		v := int64(*value)
+		o.Int64 = &v
 		return nil
 	case *int:
 		v := int64(*value)
@@ -257,46 +264,35 @@ func (o *Int64) Scan(pValue interface{}) error {
 
 // Int64 implements the driver Valuer interface.
 func (o Int64) Value() (driver.Value, error) {
-	return o.I(), nil
-}
-
-func (o Int64) I() interface{} {
-	if o.Int64 == nil {
-    	return nil
-	}
-	return *o.Int64
+	return o.Interface(), nil
 }
 
 func (o Int64) Interface() interface{} {
-	return o.I()
+	if o.Int64 == nil {
+		return nil
+	}
+	return int64(*o.Int64)
 }
 
 // Returns the primitive value of Int64 if nil returns 0
 // Same as Primitive()
-func (o Int64) P() int64 {
-	if v := o.I(); v != nil {
+func (o Int64) Primitive() int64 {
+	if v := o.Interface(); v != nil {
 		return v.(int64)
 	}
 	return 0 // TODO maybe return max instead
 }
 
-// Returns the primitive value of Int64 if nil returns 0
-func (o Int64) Primitive() int64 {
-	return o.P()
+// Prints the value
+func (o Int64) String() string {
+	return fmt.Sprint(o.Interface())
 }
 
 // Returns the primitive type
 func (o Int64) Kind() reflect.Kind {
 	return reflect.Int64
-}
+} // TODO reduce slice to itself to get rid of scan
 
-// Prints the value
-func (o Int64) String() string {
-	if o.Int64 != nil {
-		return fmt.Sprintf("%d", *o.Int64)
-	}
-	return fmt.Sprint(nil)
-}
 
 // Is an Int64 under the covers where its name flags its use
 type AutoIncrement struct {
@@ -317,7 +313,7 @@ type Float64 struct {
 	Float64 *float64
 }
 
-// Float64 implements the opal.OPAL interface
+// Float64 implements the opal.Opal interface
 func (Float64) opal() OpalMagic {
 	return opal
 }
@@ -380,7 +376,7 @@ type Bool struct {
 	Bool *bool
 }
 
-// Bool implements the opal.OPAL interface
+// Bool implements the opal.Opal interface
 func (Bool) opal() OpalMagic {
 	return opal
 }
@@ -421,11 +417,6 @@ func (o Bool) Value() (driver.Value, error) {
 	return *o.Bool, nil
 }
 
-// Returns the primitive type
-func (o Bool) Kind() reflect.Kind {
-	return reflect.Bool
-}
-
 // Prints the value
 func (o Bool) String() string {
 	if o.Bool != nil {
@@ -433,6 +424,12 @@ func (o Bool) String() string {
 	}
 	return fmt.Sprint(nil)
 }
+
+// Returns the primitive type
+func (o Bool) Kind() reflect.Kind {
+	return reflect.Bool
+} // TODO reduce slice to itself to get rid of scan
+
 
 // ************************************************  Date TYPE
 
@@ -443,7 +440,7 @@ type Time struct {
 	*time.Time
 }
 
-// Time implements the opal.OPAL interface
+// Time implements the opal.Opal interface
 func (Time) opal() OpalMagic {
 	return opal
 }
@@ -582,9 +579,9 @@ func convertAssign(dest, src interface{}) error {
 		sv = reflect.ValueOf(src)
 		switch sv.Kind() {
 		case reflect.Bool,
-		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Float32, reflect.Float64:
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Float32, reflect.Float64:
 			*d = fmt.Sprintf("%v", src)
 			return nil
 		}
@@ -592,9 +589,9 @@ func convertAssign(dest, src interface{}) error {
 		sv = reflect.ValueOf(src)
 		switch sv.Kind() {
 		case reflect.Bool,
-		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Float32, reflect.Float64:
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Float32, reflect.Float64:
 			*d = []byte(fmt.Sprintf("%v", src))
 			return nil
 		}
@@ -602,9 +599,9 @@ func convertAssign(dest, src interface{}) error {
 		sv = reflect.ValueOf(src)
 		switch sv.Kind() {
 		case reflect.Bool,
-		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Float32, reflect.Float64:
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Float32, reflect.Float64:
 			*d = sql.RawBytes(fmt.Sprintf("%v", src))
 			return nil
 		}
@@ -679,7 +676,6 @@ func convertAssign(dest, src interface{}) error {
 	return fmt.Errorf("unsupported driver -> Scan pair: %T -> %T", src, dest)
 }
 
-
 func asString(src interface{}) string {
 	switch v := src.(type) {
 	case string:
@@ -689,7 +685,6 @@ func asString(src interface{}) string {
 	}
 	return fmt.Sprintf("%v", src)
 }
-
 
 func cloneBytes(b []byte) []byte {
 	if b == nil {

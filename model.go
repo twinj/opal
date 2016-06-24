@@ -14,7 +14,6 @@ var _ Domain = &OpalEntity{}
 // Compile time check of Entity implementations
 var _ Entity = &OpalEntity{}
 
-
 // ***********************************************  Model...
 
 // A Model is the interface type which can represent any object
@@ -39,7 +38,7 @@ type Model interface {
 	// It also retrieves a function to create the Models domain
 	// specific DAO. This object can be used to perform tasks
 	// associated with the Models domain rather than a single instance.
-	Gather(pMetadata *ModelMetadata) (ModelName, *Entity, func(*ModelIDAO)ModelDAO)
+	Gather(pMetadata *ModelMetadata) (ModelName, *Entity, func(*ModelIDAO) ModelDAO)
 
 	// ScanInto should return a new Model which can interact with
 	// the base DAO system and addresses to its columns so data

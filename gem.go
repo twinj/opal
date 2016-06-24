@@ -17,17 +17,17 @@ type Gem struct {
 	txMu sync.Mutex
 
 	// Will usually be nil
-	tx *Txn
+	tx                   *Txn
 	txPreparedStatements map[*sql.Stmt]*sql.Stmt
 
 	dao               *ModelIDAO // TODO change to embedded dao?
 	modelNames        []ModelName
 	allModelsMetadata map[ModelName]ModelMetadata
-	allModelsEntity map[ModelName]*Entity
+	allModelsEntity   map[ModelName]*Entity
 
 	funcCreateDomainEntity func(pModelName ModelName) Entity
 
-	// TODO make it work without INIT add reflection based like Gorp
+	// TODO make it work without INIT add reflection based
 	// so Entities can be made on the fly
 
 }
@@ -42,6 +42,7 @@ func (o Gem) Metadata(pModelName ModelName) ModelMetadata {
 // Will take any Sql interface and the ModelName to identify Model
 func (o Gem) Query(pModelName ModelName, pSql Sql) ([]Model, error) {
 	// Do query and convert results to Models
+	// TODO assert right model
 	rows, err := o.DB.Query(pSql.String())
 	if err != nil {
 		log.Print(err)
@@ -115,7 +116,7 @@ func persist(pExecor Execor, pModel Model, pArgs ...interface{}) Result {
 		}
 	}
 	return result
-}   // TODO metadata API and interface - check security
+} // TODO metadata API and interface - check security
 
 // calls the model exec method with update args and hooks
 func merge(pExecor Execor, pModel Model) Result {
@@ -172,12 +173,12 @@ func (o Result) String() string {
 	} else {
 		sErr = fmt.Sprint(o.Error)
 	}
-	if (errI == nil) {
+	if errI == nil {
 		si = fmt.Sprintf("%d", i)
 	} else {
 		si = fmt.Sprint(errI)
 	}
-	if (errJ == nil) {
+	if errJ == nil {
 		sj = fmt.Sprintf("%d", j)
 	} else {
 		sj = fmt.Sprint(errJ)
@@ -195,5 +196,3 @@ func (o Result) String() string {
 type BaseModel interface {
 	Models() []Domain
 }
-
-

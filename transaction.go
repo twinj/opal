@@ -1,14 +1,8 @@
-/**
- * Date: 12/02/14
- * Time: 8:20 AM
- */
 package opal
 
 import (
 	"database/sql"
 )
-
-// ******************************************** Transactions
 
 // Txn is a sql.Tx wrapper which holds the action to run and its result
 // It also carries a reference to the current Gem.
@@ -99,22 +93,22 @@ func (o *Txn) Go() (result Result, success bool) {
 		goto commit
 	}
 rollback:
-{
-	o.result.Error = o.Rollback()
-	result = o.result
-	success = false
-	goto done
-}
-commit:
-{
-	// Try commit - TODO [possible log reversal]
-	o.result.Error = o.Commit()
-	if o.result.Error != nil {
-		goto rollback
+	{
+		o.result.Error = o.Rollback()
+		result = o.result
+		success = false
+		goto done
 	}
-	result = o.result
-	success = true
-}
+commit:
+	{
+		// Try commit - TODO [possible log reversal]
+		o.result.Error = o.Commit()
+		if o.result.Error != nil {
+			goto rollback
+		}
+		result = o.result
+		success = true
+	}
 done:
 	// Clean transactional and unlock
 	o.gem.tx = nil
@@ -141,7 +135,7 @@ func (o *Txn) Create(pModel Model, pArgs Args) Result {
 		persist(o, pModel)
 	}
 	return persist(o, pModel, pArgs.Get()...)
-}  // TODO consider moving the execor to replace the DAO so that a transaction takes over the role of the DAO when it is active
+} // TODO consider moving the execor to replace the DAO so that a transaction takes over the role of the DAO when it is active
 
 // Delete will delete the Model within a Transaction.
 // Call this within a Txn func Action
@@ -156,7 +150,7 @@ func (o *Txn) Exec(pSql Sql, pArgs ...interface{}) Result {
 
 type StmtExec func(...interface{}) (*sql.Result, error)
 type StmtQuery func(...interface{}) (*sql.Rows, error)
-type StmtQueryRow func(...interface{}) (*sql.Row)
+type StmtQueryRow func(...interface{}) *sql.Row
 
 func (o *Txn) ExecorStmt(pModelName ModelName, pNamedStmt string) *sql.Stmt {
 	stmt := o.gem.allModelsMetadata[pModelName].preparedStatements[pNamedStmt]
@@ -164,13 +158,10 @@ func (o *Txn) ExecorStmt(pModelName ModelName, pNamedStmt string) *sql.Stmt {
 }
 
 func (o *Txn) stmt(pStmt *sql.Stmt) *sql.Stmt {
-	if v, ok := o.gem.txPreparedStatements[pStmt]; ok && v != nil {   // TODO remove nil once delete works
+	if v, ok := o.gem.txPreparedStatements[pStmt]; ok && v != nil { // TODO remove nil once delete works
 		return v
 	}
 	txStmt := o.Stmt(pStmt)
 	o.gem.txPreparedStatements[pStmt] = txStmt
 	return txStmt
 }
-
-
-

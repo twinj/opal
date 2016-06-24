@@ -248,7 +248,7 @@ func (o *ModelMetadata) ColumnListWithConstraints(pBuilder *SqlBuilder, fDialect
 				pBuilder.Add(", ")
 			} else {
 				key.BuildKeySchema(pBuilder).Add(", ")
-			}// TODO a better way
+			} // TODO a better way
 			// TODO handle other types and compound keys and different dialects
 		}
 	} else {
@@ -338,6 +338,6 @@ func (o Column) ToSqlType() string {
 
 // TODO
 type Table struct {
-	Name          string
-	Key           []string
+	Name string
+	Key  []string
 }

@@ -4,8 +4,6 @@ import (
 	"fmt"
 )
 
-// Entity *****************************************************
-
 type DomainModel struct {
 	Domain
 	Interface interface{}
@@ -72,9 +70,9 @@ type Entity interface {
 // instances of the Entity.
 type OpalEntity struct {
 	activeRecord ActiveRecordDAO
-	modelName *ModelName
-	model Model
-	metadata *ModelMetadata
+	modelName    *ModelName
+	model        Model
+	metadata     *ModelMetadata
 }
 
 // Pass this function into the Gem to create all base Entities
@@ -82,6 +80,7 @@ type OpalEntity struct {
 func NewEntity(pModelName ModelName) Entity {
 	return &OpalEntity{currentGem.dao, &pModelName, nil, nil}
 }
+
 // TODO shrink use of instances here if possible heavy on performance
 func (o OpalEntity) New(pModel Model) Entity {
 	e := new(OpalEntity)

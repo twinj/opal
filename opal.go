@@ -7,7 +7,7 @@ package opal
 import (
 	"database/sql"
 	"fmt"
-	"github.com/twinj/version"
+	_ "github.com/twinj/version"
 	"log"
 	"reflect"
 )
@@ -33,7 +33,7 @@ var (
 )
 
 func init() {
-	version.Init(group, opalMagic, release, iteration, revision, api, "OPAL")
+	//version.Init(group, opalMagic, release, iteration, revision, api, "OPAL")
 }
 
 // Copy a Gem into the packages address to be used as the current service
@@ -66,11 +66,27 @@ type ActiveRecordDAO interface {
 	Delete(pModel Model) Result
 }
 
+// ActiveRecordDAO acts as a data provider for a Model's Entity.
+// It is a limited version of the full Domain access object.
+type ActiveRecord interface {
+
+	// Takes a Model saves it as a new data-store entity and
+	// returns a result
+	Insert(pModel Model) Result
+
+	// Takes a Model, updates an existing entity from the
+	// data-store and returns a result
+	Save(pModel Model) Result
+
+	// Takes a Model and removes an existing entity from the
+	// data-store
+	Delete(pModel Model) Result
+}
+
 // ModelDAO acts a data provider for a Model's domain
 // Methods are
 type ModelDAO interface {
-
-	OPAL
+	Opal
 	ActiveRecordDAO
 
 	// Find all models within the domain
@@ -88,7 +104,7 @@ type ModelDAO interface {
 
 // ModelIDAO Implements ModelDAO
 type ModelIDAO struct {
-	gem *Gem
+	gem   *Gem
 	model ModelName
 }
 
@@ -227,11 +243,11 @@ type Sql interface {
 }
 
 type StartArgs struct {
-	BaseModel BaseModel
-	DB *sql.DB
-	Dialect   Dialect
+	BaseModel    BaseModel
+	DB           *sql.DB
+	Dialect      Dialect
 	CreateEntity func(ModelName) Entity
-	Id *OpalMagic
+	Id           *OpalMagic
 }
 
 func GEM(o StartArgs) *Gem {
@@ -286,6 +302,7 @@ func GEM(o StartArgs) *Gem {
 		log.Printf("Opal.Start: Create table statement: %s", table.String())
 		gem.Exec(table)
 
+		// Add these first run
 		meta.addStmt(gem.DB, findAll, builder.Select().Sql())
 		meta.addStmt(gem.DB, find, builder.Select().WherePk().Sql())
 		meta.addStmt(gem.DB, insert, builder.Insert().Values().Sql())
@@ -320,5 +337,3 @@ type ModelQueries interface {
 
 type Validation interface {
 }
-
-

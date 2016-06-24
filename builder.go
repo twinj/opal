@@ -54,6 +54,22 @@ func (o *SqlBuilder) Delete() *SqlBuilder {
 	return o.Add("DELETE FROM ").Add(o.table.Name)
 }
 
+func (o *SqlBuilder) Where(pMap Mapper) *SqlBuilder {
+	o.Add(" WHERE ")
+	// TODO must be at least one value
+	// excludes null
+	for _, column := range o.columns {
+		if value := pMap.Map()[column.Identifier]; *value != nil {
+			o.Add(column.Name).Add(" = ? AND ")
+		}
+	}
+	return o.Truncate(5)
+}
+
+type Mapper interface {
+	Map() map[string]*interface{}
+}
+
 func (o *SqlBuilder) WherePk() *SqlBuilder {
 	return o.Add(" WHERE ").With(o.KeyListEqualsKeyBindList, o.EncodeIdentifier)
 }

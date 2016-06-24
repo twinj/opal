@@ -8,7 +8,7 @@ import (
 func TestExtractOpalTags(t *testing.T) {
 
 	var tagOpalTests = []struct {
-		Tag reflect.StructTag
+		Tag   reflect.StructTag
 		Value Tag
 	}{
 		{`||`, ``},
@@ -52,7 +52,7 @@ func TestTagGet(t *testing.T) {
 }
 
 func TestImportName(t *testing.T) {
-	type T struct {}
+	type T struct{}
 	r := reflect.TypeOf(T{})
 	s := importName(r)
 	if s != "opal.T" {

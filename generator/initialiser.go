@@ -1,8 +1,4 @@
-/**
- * Date: 9/02/14
- * Time: 7:06 PM
- */
-package opal
+package generator
 
 import (
 	"bitbucket.org/pkg/inflect"
@@ -16,6 +12,7 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	. "github.com/twinj/opal-old"
 )
 
 // Some rules
