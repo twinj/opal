@@ -1,4 +1,6 @@
-opal
+This was a tech spike. Do not use this code. This is being re coded from scratch at myesui/opal
+
+opal 
 ====
 
 A Go ORM which implements the ActiveRecord pattern
